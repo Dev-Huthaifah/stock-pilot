@@ -1,0 +1,22 @@
+namespace StockPilot.Api.Models;
+
+public class Company
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+
+    public string Name { get; set; } = string.Empty;
+
+    public string? Email { get; set; }
+
+    public string? Phone { get; set; }
+
+    public bool IsActive { get; set; } = true;
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public ICollection<Warehouse> Warehouses { get; set; }
+        = new List<Warehouse>();
+
+    public ICollection<Product> Products { get; set; }
+        = new List<Product>();
+}
