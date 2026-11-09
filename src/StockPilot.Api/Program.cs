@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using StockPilot.Api.Data;
+using StockPilot.Api.Services.Interfaces;
+using StockPilot.Api.Services.Implementations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +12,7 @@ var connectionString =
 
 builder.Services.AddDbContext<StockPilotDbContext>(options =>
     options.UseSqlServer(connectionString));
+builder.Services.AddScoped<ICompanyService, CompanyService>();
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
