@@ -15,4 +15,7 @@ public class StockTransferItem
     public StockTransfer StockTransfer { get; set; } = null!;
 
     public Product Product { get; set; } = null!;
+
+    public ICollection<StockMovement> StockMovements { get; set; }
+    = new List<StockMovement>();
 }

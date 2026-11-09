@@ -20,4 +20,13 @@ public class Warehouse
 
     public ICollection<ProductStock> ProductStocks { get; set; }
         = new List<ProductStock>();
+
+    public ICollection<StockMovement> StockMovements { get; set; }
+        = new List<StockMovement>();
+
+    public ICollection<StockTransfer> SourceTransfers { get; set; }
+        = new List<StockTransfer>();
+
+    public ICollection<StockTransfer> DestinationTransfers { get; set; }
+        = new List<StockTransfer>();
 }

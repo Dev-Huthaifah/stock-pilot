@@ -26,4 +26,10 @@ public class Product
 
     public ICollection<ProductStock> ProductStocks { get; set; }
         = new List<ProductStock>();
+
+    public ICollection<StockMovement> StockMovements { get; set; }
+        = new List<StockMovement>();
+
+    public ICollection<StockTransferItem> StockTransferItems { get; set; }
+        = new List<StockTransferItem>();
 }
