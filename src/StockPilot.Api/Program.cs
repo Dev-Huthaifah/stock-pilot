@@ -13,6 +13,7 @@ var connectionString =
 builder.Services.AddDbContext<StockPilotDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddScoped<ICompanyService, CompanyService>();
+builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
