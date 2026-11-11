@@ -116,6 +116,28 @@ public class WarehouseService : IWarehouseService
         return MapToResponse(warehouse);
     }
 
+    public async Task<bool> ActivateAsync(
+        Guid companyId,
+        Guid warehouseId)
+    {
+        var warehouse = await _context.Warehouses
+            .FirstOrDefaultAsync(w =>
+                w.Id == warehouseId &&
+                w.CompanyId == companyId);
+
+        if (warehouse is null)
+            return false;
+
+        if (warehouse.IsActive)
+            return true;
+
+        warehouse.IsActive = true;
+
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
+
     public async Task<bool> DeactivateAsync(
         Guid companyId,
         Guid warehouseId)

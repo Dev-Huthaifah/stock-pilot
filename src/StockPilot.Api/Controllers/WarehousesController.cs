@@ -85,6 +85,21 @@ public class WarehousesController : ControllerBase
         }
     }
 
+    [HttpPatch("{warehouseId:guid}/activate")]
+    public async Task<IActionResult> Activate(
+        Guid companyId,
+        Guid warehouseId)
+    {
+        var result = await _warehouseService.ActivateAsync(
+            companyId,
+            warehouseId);
+
+        if (!result)
+            return NotFound("Warehouse not found.");
+
+        return NoContent();
+    }
+
     [HttpDelete("{warehouseId:guid}")]
     public async Task<IActionResult> Deactivate(
         Guid companyId,

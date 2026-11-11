@@ -20,6 +20,10 @@ public interface IWarehouseService
         Guid warehouseId,
         UpdateWarehouseDto dto);
 
+    Task<bool> ActivateAsync(
+        Guid companyId,
+        Guid warehouseId);
+
     Task<bool> DeactivateAsync(
         Guid companyId,
         Guid warehouseId);

@@ -15,6 +15,7 @@ builder.Services.AddDbContext<StockPilotDbContext>(options =>
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IStockService, StockService>();
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
