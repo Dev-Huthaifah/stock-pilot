@@ -16,6 +16,7 @@ builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IStockService, StockService>();
+builder.Services.AddScoped<IStockTransferService, StockTransferService>();
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
