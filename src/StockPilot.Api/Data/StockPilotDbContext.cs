@@ -1,11 +1,15 @@
-
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using StockPilot.Api.Models;
 
 namespace StockPilot.Api.Data;
 
-public sealed class StockPilotDbContext : DbContext
+public sealed class StockPilotDbContext
+    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
 {
+    public DbSet<CompanyMembership> CompanyMemberships
+    => Set<CompanyMembership>();
     public StockPilotDbContext(
         DbContextOptions<StockPilotDbContext> options)
         : base(options)
@@ -19,11 +23,22 @@ public sealed class StockPilotDbContext : DbContext
     public DbSet<StockTransfer> StockTransfers => Set<StockTransfer>();
     public DbSet<StockTransferItem> StockTransferItems => Set<StockTransferItem>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
-
+    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<CompanyRolePermission> CompanyRolePermissions
+        => Set<CompanyRolePermission>();
+    public DbSet<CompanyUserPermissionOverride> CompanyUserPermissionOverrides
+        => Set<CompanyUserPermissionOverride>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<ApplicationUser>(entity =>
+        {
+            entity.Property(x => x.FullName)
+                .HasMaxLength(200)
+                .IsRequired();
 
+            entity.HasIndex(x => x.IsActive);
+        });
         ConfigureCompany(modelBuilder);
         ConfigureWarehouse(modelBuilder);
         ConfigureProduct(modelBuilder);
@@ -31,6 +46,10 @@ public sealed class StockPilotDbContext : DbContext
         ConfigureStockTransfer(modelBuilder);
         ConfigureStockTransferItem(modelBuilder);
         ConfigureStockMovement(modelBuilder);
+        ConfigureCompanyMembership(modelBuilder);
+        ConfigurePermission(modelBuilder);
+        ConfigureCompanyRolePermission(modelBuilder);
+        ConfigureCompanyUserPermissionOverride(modelBuilder);
     }
 
     private static void ConfigureCompany(ModelBuilder modelBuilder)
@@ -267,6 +286,126 @@ public sealed class StockPilotDbContext : DbContext
                 "CK_StockMovement_Quantity_Positive",
                 "[Quantity] > 0"
             ));
+        });
+    }
+    private static void ConfigureCompanyMembership(
+    ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CompanyMembership>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.HasIndex(x => new { x.UserId, x.CompanyId })
+                .IsUnique();
+
+            entity.Property(x => x.Role)
+                .HasConversion<int>();
+
+            entity.HasOne(x => x.User)
+                .WithMany(x => x.Memberships)
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Company)
+                .WithMany(x => x.Memberships)
+                .HasForeignKey(x => x.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Warehouse)
+                .WithMany(x => x.Memberships)
+                .HasForeignKey(x => new { x.CompanyId, x.WarehouseId })
+                .HasPrincipalKey(x => new { x.CompanyId, x.Id })
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.ToTable(table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_CompanyMembership_RoleWarehouse",
+                    """
+                    (
+                        [Role] = 1 AND [WarehouseId] IS NULL
+                    )
+                    OR
+                    (
+                        [Role] IN (2, 3) AND [WarehouseId] IS NOT NULL
+                    )
+                    """);
+            });
+        });
+    }
+    private static void ConfigurePermission(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Permission>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Code)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(x => x.Name)
+                .HasMaxLength(150)
+                .IsRequired();
+
+            entity.Property(x => x.Description)
+                .HasMaxLength(500);
+
+            entity.Property(x => x.Category)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.HasIndex(x => x.Code)
+                .IsUnique();
+        });
+    }
+
+private static void ConfigureCompanyRolePermission(
+    ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CompanyRolePermission>(entity =>
+        {
+            entity.HasKey(x => new
+            {
+                x.CompanyId,
+                x.Role,
+                x.PermissionId
+            });
+
+            entity.Property(x => x.Role)
+                .HasConversion<int>();
+
+            entity.HasOne(x => x.Company)
+                .WithMany(x => x.RolePermissions)
+                .HasForeignKey(x => x.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Permission)
+                .WithMany()
+                .HasForeignKey(x => x.PermissionId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+private static void ConfigureCompanyUserPermissionOverride(
+    ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CompanyUserPermissionOverride>(entity =>
+        {
+            entity.HasKey(x => new
+            {
+                x.CompanyMembershipId,
+                x.PermissionId
+            });
+
+            entity.HasOne(x => x.CompanyMembership)
+                .WithMany(x => x.PermissionOverrides)
+                .HasForeignKey(x => x.CompanyMembershipId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Permission)
+                .WithMany()
+                .HasForeignKey(x => x.PermissionId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

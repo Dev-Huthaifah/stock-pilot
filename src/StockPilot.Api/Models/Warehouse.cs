@@ -29,4 +29,6 @@ public class Warehouse
 
     public ICollection<StockTransfer> DestinationTransfers { get; set; }
         = new List<StockTransfer>();
+    public ICollection<CompanyMembership> Memberships { get; set; }
+    = new List<CompanyMembership>();
 }

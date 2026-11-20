@@ -19,4 +19,8 @@ public class Company
 
     public ICollection<Product> Products { get; set; }
         = new List<Product>();
+    public ICollection<CompanyMembership> Memberships { get; set; }
+    = new List<CompanyMembership>();
+    public ICollection<CompanyRolePermission> RolePermissions { get; set; }
+    = new List<CompanyRolePermission>();
 }

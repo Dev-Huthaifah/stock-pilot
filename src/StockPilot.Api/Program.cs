@@ -1,3 +1,7 @@
+using StockPilot.Api.Data.Seeding;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Identity;
+using StockPilot.Api.Models;
 using Microsoft.EntityFrameworkCore;
 using StockPilot.Api.Data;
 using StockPilot.Api.Services.Interfaces;
@@ -9,7 +13,29 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 var connectionString =
     builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDataProtection();
+builder.Services
+    .AddIdentityCore<ApplicationUser>(options =>
+    {
+        options.User.RequireUniqueEmail = true;
 
+        options.Password.RequiredLength = 10;
+        options.Password.RequireDigit = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireNonAlphanumeric = true;
+
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.DefaultLockoutTimeSpan =
+            TimeSpan.FromMinutes(15);
+
+        options.SignIn.RequireConfirmedEmail = false;
+    })
+    .AddRoles<IdentityRole<Guid>>()
+    .AddEntityFrameworkStores<StockPilotDbContext>()
+    .AddSignInManager()
+    .AddDefaultTokenProviders();
 builder.Services.AddDbContext<StockPilotDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddScoped<ICompanyService, CompanyService>();
@@ -18,7 +44,13 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<IStockTransferService, StockTransferService>();
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider
+        .GetRequiredService<StockPilotDbContext>();
 
+    await PermissionSeeder.SeedAsync(db);
+}
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
