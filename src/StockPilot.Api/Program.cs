@@ -43,6 +43,7 @@ builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<IStockTransferService, StockTransferService>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
