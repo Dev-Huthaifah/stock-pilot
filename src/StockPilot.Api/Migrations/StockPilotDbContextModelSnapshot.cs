@@ -190,6 +190,9 @@ namespace StockPilot.Api.Migrations
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("bit");
+
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -288,10 +291,10 @@ namespace StockPilot.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CompanyId", "WarehouseId");
-
-                    b.HasIndex("UserId", "CompanyId")
+                    b.HasIndex("UserId")
                         .IsUnique();
+
+                    b.HasIndex("CompanyId", "WarehouseId");
 
                     b.ToTable("CompanyMemberships", t =>
                         {

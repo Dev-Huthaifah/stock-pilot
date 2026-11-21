@@ -10,6 +10,8 @@ public sealed class ApplicationUser : IdentityUser<Guid>
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public bool MustChangePassword { get; set; } = false;
+
     public ICollection<CompanyMembership> Memberships { get; set; }
     = new List<CompanyMembership>();
 }

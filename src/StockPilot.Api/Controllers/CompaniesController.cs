@@ -1,4 +1,4 @@
-
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StockPilot.Api.DTOs.Companies;
 using StockPilot.Api.Services.Interfaces;
@@ -7,6 +7,7 @@ namespace StockPilot.Api.Controllers;
 
 [ApiController]
 [Route("api/platform/companies")]
+[Authorize(Policy = "PlatformAdminOnly")]
 public class CompaniesController : ControllerBase
 {
     private readonly ICompanyService _companyService;

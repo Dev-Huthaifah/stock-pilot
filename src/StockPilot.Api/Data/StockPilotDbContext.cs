@@ -295,7 +295,7 @@ public sealed class StockPilotDbContext
         {
             entity.HasKey(x => x.Id);
 
-            entity.HasIndex(x => new { x.UserId, x.CompanyId })
+            entity.HasIndex(x => x.UserId)
                 .IsUnique();
 
             entity.Property(x => x.Role)
