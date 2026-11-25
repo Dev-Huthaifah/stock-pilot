@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using StockPilot.Api.Controllers.Base;
 using StockPilot.Api.DTOs.Products;
 using StockPilot.Api.Services.Interfaces;
 
@@ -6,11 +7,14 @@ namespace StockPilot.Api.Controllers;
 
 [ApiController]
 [Route("api/companies/{companyId:guid}/products")]
-public class ProductsController : ControllerBase
+public class ProductsController : CompanyAuthorizedController
 {
     private readonly IProductService _productService;
 
-    public ProductsController(IProductService productService)
+    public ProductsController(
+        IProductService productService,
+        IPermissionService permissionService)
+        : base(permissionService)
     {
         _productService = productService;
     }
@@ -18,13 +22,22 @@ public class ProductsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(
         Guid companyId,
-        [FromBody] CreateProductDto dto)
+        [FromBody] CreateProductDto dto,
+        CancellationToken cancellationToken)
     {
+        var denied = await RequirePermissionAsync(
+            companyId,
+            "products.create",
+            cancellationToken: cancellationToken);
+
+        if (denied is not null)
+            return denied;
+
         try
         {
             var product = await _productService.CreateAsync(companyId, dto);
 
-            if (product == null)
+            if (product is null)
                 return NotFound(new
                 {
                     message = "Company not found or inactive."
@@ -32,11 +45,7 @@ public class ProductsController : ControllerBase
 
             return CreatedAtAction(
                 nameof(GetById),
-                new
-                {
-                    companyId,
-                    productId = product.Id
-                },
+                new { companyId, productId = product.Id },
                 product);
         }
         catch (InvalidOperationException ex)
@@ -48,8 +57,17 @@ public class ProductsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll(
         Guid companyId,
-        [FromQuery] bool includeInactive = false)
+        [FromQuery] bool includeInactive = false,
+        CancellationToken cancellationToken = default)
     {
+        var denied = await RequireCompanyPermissionAsync(
+            companyId,
+            "products.view",
+            cancellationToken);
+
+        if (denied is not null)
+            return denied;
+
         var products = await _productService.GetAllAsync(
             companyId,
             includeInactive);
@@ -60,13 +78,22 @@ public class ProductsController : ControllerBase
     [HttpGet("{productId:guid}")]
     public async Task<IActionResult> GetById(
         Guid companyId,
-        Guid productId)
+        Guid productId,
+        CancellationToken cancellationToken)
     {
+        var denied = await RequireCompanyPermissionAsync(
+            companyId,
+            "products.view",
+            cancellationToken);
+
+        if (denied is not null)
+            return denied;
+
         var product = await _productService.GetByIdAsync(
             companyId,
             productId);
 
-        if (product == null)
+        if (product is null)
             return NotFound(new { message = "Product not found." });
 
         return Ok(product);
@@ -76,8 +103,17 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> Update(
         Guid companyId,
         Guid productId,
-        [FromBody] UpdateProductDto dto)
+        [FromBody] UpdateProductDto dto,
+        CancellationToken cancellationToken)
     {
+        var denied = await RequirePermissionAsync(
+            companyId,
+            "products.update",
+            cancellationToken: cancellationToken);
+
+        if (denied is not null)
+            return denied;
+
         try
         {
             var product = await _productService.UpdateAsync(
@@ -85,7 +121,7 @@ public class ProductsController : ControllerBase
                 productId,
                 dto);
 
-            if (product == null)
+            if (product is null)
                 return NotFound(new { message = "Product not found." });
 
             return Ok(product);
@@ -99,8 +135,17 @@ public class ProductsController : ControllerBase
     [HttpDelete("{productId:guid}")]
     public async Task<IActionResult> Deactivate(
         Guid companyId,
-        Guid productId)
+        Guid productId,
+        CancellationToken cancellationToken)
     {
+        var denied = await RequirePermissionAsync(
+            companyId,
+            "products.update",
+            cancellationToken: cancellationToken);
+
+        if (denied is not null)
+            return denied;
+
         var result = await _productService.DeactivateAsync(
             companyId,
             productId);

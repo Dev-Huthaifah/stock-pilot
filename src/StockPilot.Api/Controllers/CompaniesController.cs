@@ -17,21 +17,6 @@ public class CompaniesController : ControllerBase
         _companyService = companyService;
     }
 
-    [HttpPost]
-    public async Task<ActionResult<CompanyResponseDto>> Create(
-        CreateCompanyDto dto,
-        CancellationToken cancellationToken)
-    {
-        var company = await _companyService.CreateAsync(
-            dto,
-            cancellationToken);
-
-        return CreatedAtAction(
-            nameof(GetById),
-            new { id = company.Id },
-            company);
-    }
-
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<CompanyResponseDto>>> GetAll(
         CancellationToken cancellationToken)

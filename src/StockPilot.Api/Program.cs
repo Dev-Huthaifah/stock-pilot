@@ -141,6 +141,8 @@ using (var scope = app.Services.CreateScope())
         .GetRequiredService<StockPilotDbContext>();
 
     await PermissionSeeder.SeedAsync(db);
+
+    await CompanyRolePermissionSeeder.SeedAllAsync(db);
 }
 if (app.Environment.IsDevelopment())
 {

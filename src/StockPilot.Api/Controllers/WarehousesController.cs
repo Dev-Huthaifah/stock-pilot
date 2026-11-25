@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using StockPilot.Api.Controllers.Base;
 using StockPilot.Api.DTOs.Warehouses;
 using StockPilot.Api.Services.Interfaces;
 
@@ -6,11 +7,14 @@ namespace StockPilot.Api.Controllers;
 
 [ApiController]
 [Route("api/companies/{companyId:guid}/warehouses")]
-public class WarehousesController : ControllerBase
+public class WarehousesController : CompanyAuthorizedController
 {
     private readonly IWarehouseService _warehouseService;
 
-    public WarehousesController(IWarehouseService warehouseService)
+    public WarehousesController(
+        IWarehouseService warehouseService,
+        IPermissionService permissionService)
+        : base(permissionService)
     {
         _warehouseService = warehouseService;
     }
@@ -18,8 +22,17 @@ public class WarehousesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(
         Guid companyId,
-        [FromBody] CreateWarehouseDto dto)
+        [FromBody] CreateWarehouseDto dto,
+        CancellationToken cancellationToken)
     {
+        var denied = await RequirePermissionAsync(
+            companyId,
+            "warehouses.manage",
+            cancellationToken: cancellationToken);
+
+        if (denied is not null)
+            return denied;
+
         try
         {
             var result = await _warehouseService.CreateAsync(companyId, dto);
@@ -39,8 +52,39 @@ public class WarehousesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll(Guid companyId)
+    public async Task<IActionResult> GetAll(
+        Guid companyId,
+        CancellationToken cancellationToken)
     {
+        if (TryGetAssignedWarehouseId(out var assignedWarehouseId))
+        {
+            var denied = await RequirePermissionAsync(
+                companyId,
+                "warehouses.view",
+                assignedWarehouseId,
+                cancellationToken);
+
+            if (denied is not null)
+                return denied;
+
+            var assignedWarehouse = await _warehouseService.GetByIdAsync(
+                companyId,
+                assignedWarehouseId);
+
+            if (assignedWarehouse is null)
+                return NotFound("Warehouse not found.");
+
+            return Ok(new[] { assignedWarehouse });
+        }
+
+        var companyDenied = await RequirePermissionAsync(
+            companyId,
+            "warehouses.view",
+            cancellationToken: cancellationToken);
+
+        if (companyDenied is not null)
+            return companyDenied;
+
         var result = await _warehouseService.GetAllAsync(companyId);
 
         return Ok(result);
@@ -49,8 +93,18 @@ public class WarehousesController : ControllerBase
     [HttpGet("{warehouseId:guid}")]
     public async Task<IActionResult> GetById(
         Guid companyId,
-        Guid warehouseId)
+        Guid warehouseId,
+        CancellationToken cancellationToken)
     {
+        var denied = await RequirePermissionAsync(
+            companyId,
+            "warehouses.view",
+            warehouseId,
+            cancellationToken);
+
+        if (denied is not null)
+            return denied;
+
         var result = await _warehouseService.GetByIdAsync(
             companyId,
             warehouseId);
@@ -65,8 +119,17 @@ public class WarehousesController : ControllerBase
     public async Task<IActionResult> Update(
         Guid companyId,
         Guid warehouseId,
-        [FromBody] UpdateWarehouseDto dto)
+        [FromBody] UpdateWarehouseDto dto,
+        CancellationToken cancellationToken)
     {
+        var denied = await RequirePermissionAsync(
+            companyId,
+            "warehouses.manage",
+            cancellationToken: cancellationToken);
+
+        if (denied is not null)
+            return denied;
+
         try
         {
             var result = await _warehouseService.UpdateAsync(
@@ -88,8 +151,17 @@ public class WarehousesController : ControllerBase
     [HttpPatch("{warehouseId:guid}/activate")]
     public async Task<IActionResult> Activate(
         Guid companyId,
-        Guid warehouseId)
+        Guid warehouseId,
+        CancellationToken cancellationToken)
     {
+        var denied = await RequirePermissionAsync(
+            companyId,
+            "warehouses.manage",
+            cancellationToken: cancellationToken);
+
+        if (denied is not null)
+            return denied;
+
         var result = await _warehouseService.ActivateAsync(
             companyId,
             warehouseId);
@@ -103,8 +175,17 @@ public class WarehousesController : ControllerBase
     [HttpDelete("{warehouseId:guid}")]
     public async Task<IActionResult> Deactivate(
         Guid companyId,
-        Guid warehouseId)
+        Guid warehouseId,
+        CancellationToken cancellationToken)
     {
+        var denied = await RequirePermissionAsync(
+            companyId,
+            "warehouses.manage",
+            cancellationToken: cancellationToken);
+
+        if (denied is not null)
+            return denied;
+
         var result = await _warehouseService.DeactivateAsync(
             companyId,
             warehouseId);

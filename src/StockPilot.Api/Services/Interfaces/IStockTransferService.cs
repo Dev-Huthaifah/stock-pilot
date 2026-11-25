@@ -9,11 +9,13 @@ public interface IStockTransferService
         CreateStockTransferDto dto);
 
     Task<List<StockTransferResponseDto>> GetAllAsync(
-        Guid companyId);
+    Guid companyId,
+    Guid? warehouseId = null);
 
     Task<StockTransferResponseDto> GetByIdAsync(
         Guid companyId,
-        Guid transferId);
+        Guid transferId,
+        Guid? warehouseId = null);
 
     Task<StockTransferResponseDto> PostAsync(
         Guid companyId,

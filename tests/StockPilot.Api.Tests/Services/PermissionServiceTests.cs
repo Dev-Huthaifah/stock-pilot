@@ -239,6 +239,132 @@ public class PermissionServiceTests
         Assert.True(result);
     }
 
+    [Fact]
+    public async Task HasCompanyPermissionAsync_WarehouseEmployeeCanViewProducts_ReturnsTrue()
+    {
+        var scenario = await CreateScenarioAsync(
+            role: CompanyRole.WarehouseEmployee,
+            assignedWarehouse: true,
+            grantRolePermission: true);
+
+        using var db = scenario.Db;
+        var service = new PermissionService(db);
+
+        var result = await service.HasCompanyPermissionAsync(
+            scenario.Ids.UserId,
+            scenario.Ids.CompanyId,
+            PermissionCode);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task HasCompanyPermissionAsync_WarehouseModeratorCanViewProducts_ReturnsTrue()
+    {
+        var scenario = await CreateScenarioAsync(
+            role: CompanyRole.WarehouseModerator,
+            assignedWarehouse: true,
+            grantRolePermission: true);
+
+        using var db = scenario.Db;
+        var service = new PermissionService(db);
+
+        var result = await service.HasCompanyPermissionAsync(
+            scenario.Ids.UserId,
+            scenario.Ids.CompanyId,
+            PermissionCode);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task HasCompanyPermissionAsync_RoleDoesNotHavePermission_ReturnsFalse()
+    {
+        var scenario = await CreateScenarioAsync(
+            role: CompanyRole.WarehouseEmployee,
+            assignedWarehouse: true);
+
+        using var db = scenario.Db;
+        var service = new PermissionService(db);
+
+        var result = await service.HasCompanyPermissionAsync(
+            scenario.Ids.UserId,
+            scenario.Ids.CompanyId,
+            PermissionCode);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task HasCompanyPermissionAsync_OverrideDeny_TakesPrecedenceOverRole()
+    {
+        var scenario = await CreateScenarioAsync(
+            role: CompanyRole.WarehouseEmployee,
+            assignedWarehouse: true,
+            grantRolePermission: true);
+
+        using var db = scenario.Db;
+
+        db.CompanyUserPermissionOverrides.Add(
+            new CompanyUserPermissionOverride
+            {
+                CompanyMembershipId = scenario.Ids.MembershipId,
+                PermissionId = scenario.Ids.PermissionId,
+                IsAllowed = false
+            });
+
+        await db.SaveChangesAsync();
+
+        var service = new PermissionService(db);
+
+        var result = await service.HasCompanyPermissionAsync(
+            scenario.Ids.UserId,
+            scenario.Ids.CompanyId,
+            PermissionCode);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task HasCompanyPermissionAsync_InactiveMembership_ReturnsFalse()
+    {
+        var scenario = await CreateScenarioAsync(
+            role: CompanyRole.WarehouseEmployee,
+            assignedWarehouse: true,
+            membershipActive: false,
+            grantRolePermission: true);
+
+        using var db = scenario.Db;
+        var service = new PermissionService(db);
+
+        var result = await service.HasCompanyPermissionAsync(
+            scenario.Ids.UserId,
+            scenario.Ids.CompanyId,
+            PermissionCode);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task HasCompanyPermissionAsync_InactiveAssignedWarehouse_ReturnsFalse()
+    {
+        var scenario = await CreateScenarioAsync(
+            role: CompanyRole.WarehouseEmployee,
+            assignedWarehouse: true,
+            assignedWarehouseActive: false,
+            grantRolePermission: true);
+
+        using var db = scenario.Db;
+        var service = new PermissionService(db);
+
+        var result = await service.HasCompanyPermissionAsync(
+            scenario.Ids.UserId,
+            scenario.Ids.CompanyId,
+            PermissionCode);
+
+        Assert.False(result);
+    }
+
     private static async Task<(StockPilotDbContext Db, TestIds Ids)>
         CreateScenarioAsync(
             bool grantRolePermission = false,

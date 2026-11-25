@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using StockPilot.Api.Controllers.Base;
 using StockPilot.Api.DTOs.Stock;
 using StockPilot.Api.Services.Interfaces;
 
@@ -6,11 +7,14 @@ namespace StockPilot.Api.Controllers;
 
 [ApiController]
 [Route("api/companies/{companyId:guid}/stock")]
-public class StockController : ControllerBase
+public class StockController : CompanyAuthorizedController
 {
     private readonly IStockService _stockService;
 
-    public StockController(IStockService stockService)
+    public StockController(
+        IStockService stockService,
+        IPermissionService permissionService)
+        : base(permissionService)
     {
         _stockService = stockService;
     }
@@ -19,11 +23,37 @@ public class StockController : ControllerBase
     public async Task<IActionResult> GetAll(
         Guid companyId,
         [FromQuery] Guid? warehouseId,
-        [FromQuery] Guid? productId)
+        [FromQuery] Guid? productId,
+        CancellationToken cancellationToken)
     {
+        Guid? effectiveWarehouseId = warehouseId;
+
+        if (User.HasClaim(c => c.Type == "warehouse_id"))
+        {
+            if (!TryGetAssignedWarehouseId(out var assignedWarehouseId))
+                return Forbid();
+
+            if (warehouseId.HasValue &&
+                warehouseId.Value != assignedWarehouseId)
+            {
+                return Forbid();
+            }
+
+            effectiveWarehouseId = assignedWarehouseId;
+        }
+
+        var denied = await RequirePermissionAsync(
+            companyId,
+            "stock.view",
+            effectiveWarehouseId,
+            cancellationToken);
+
+        if (denied is not null)
+            return denied;
+
         var stocks = await _stockService.GetAllAsync(
             companyId,
-            warehouseId,
+            effectiveWarehouseId,
             productId);
 
         return Ok(stocks);
@@ -33,11 +63,37 @@ public class StockController : ControllerBase
     public async Task<IActionResult> GetMovements(
         Guid companyId,
         [FromQuery] Guid? warehouseId,
-        [FromQuery] Guid? productId)
+        [FromQuery] Guid? productId,
+        CancellationToken cancellationToken)
     {
+        Guid? effectiveWarehouseId = warehouseId;
+
+        if (User.HasClaim(c => c.Type == "warehouse_id"))
+        {
+            if (!TryGetAssignedWarehouseId(out var assignedWarehouseId))
+                return Forbid();
+
+            if (warehouseId.HasValue &&
+                warehouseId.Value != assignedWarehouseId)
+            {
+                return Forbid();
+            }
+
+            effectiveWarehouseId = assignedWarehouseId;
+        }
+
+        var denied = await RequirePermissionAsync(
+            companyId,
+            "stock.view",
+            effectiveWarehouseId,
+            cancellationToken);
+
+        if (denied is not null)
+            return denied;
+
         var movements = await _stockService.GetMovementsAsync(
             companyId,
-            warehouseId,
+            effectiveWarehouseId,
             productId);
 
         return Ok(movements);
@@ -46,8 +102,18 @@ public class StockController : ControllerBase
     [HttpPost("in")]
     public async Task<IActionResult> StockIn(
         Guid companyId,
-        [FromBody] StockInDto dto)
+        [FromBody] StockInDto dto,
+        CancellationToken cancellationToken)
     {
+        var denied = await RequirePermissionAsync(
+            companyId,
+            "stock.in",
+            dto.WarehouseId,
+            cancellationToken);
+
+        if (denied is not null)
+            return denied;
+
         try
         {
             var result = await _stockService.StockInAsync(companyId, dto);
@@ -66,8 +132,18 @@ public class StockController : ControllerBase
     [HttpPost("out")]
     public async Task<IActionResult> StockOut(
         Guid companyId,
-        [FromBody] StockOutDto dto)
+        [FromBody] StockOutDto dto,
+        CancellationToken cancellationToken)
     {
+        var denied = await RequirePermissionAsync(
+            companyId,
+            "stock.out",
+            dto.WarehouseId,
+            cancellationToken);
+
+        if (denied is not null)
+            return denied;
+
         try
         {
             var result = await _stockService.StockOutAsync(companyId, dto);
@@ -86,8 +162,18 @@ public class StockController : ControllerBase
     [HttpPost("adjustment")]
     public async Task<IActionResult> Adjust(
         Guid companyId,
-        [FromBody] StockAdjustmentDto dto)
+        [FromBody] StockAdjustmentDto dto,
+        CancellationToken cancellationToken)
     {
+        var denied = await RequirePermissionAsync(
+            companyId,
+            "stock.adjust",
+            dto.WarehouseId,
+            cancellationToken);
+
+        if (denied is not null)
+            return denied;
+
         try
         {
             var result = await _stockService.AdjustAsync(companyId, dto);

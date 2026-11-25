@@ -8,4 +8,10 @@ public interface IPermissionService
         string permissionCode,
         Guid? warehouseId = null,
         CancellationToken cancellationToken = default);
+
+    Task<bool> HasCompanyPermissionAsync(
+        Guid userId,
+        Guid companyId,
+        string permissionCode,
+        CancellationToken cancellationToken = default);
 }

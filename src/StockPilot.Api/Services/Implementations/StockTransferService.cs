@@ -116,11 +116,23 @@ public class StockTransferService : IStockTransferService
     }
 
     public async Task<List<StockTransferResponseDto>> GetAllAsync(
-        Guid companyId)
+        Guid companyId,
+        Guid? warehouseId = null)
     {
-        var transfers = await _context.StockTransfers
+        var query = _context.StockTransfers
             .AsNoTracking()
-            .Where(x => x.CompanyId == companyId)
+            .Where(x => x.CompanyId == companyId);
+
+        if (warehouseId.HasValue)
+        {
+            var id = warehouseId.Value;
+
+            query = query.Where(x =>
+                x.SourceWarehouseId == id ||
+                x.DestinationWarehouseId == id);
+        }
+
+        var transfers = await query
             .Include(x => x.SourceWarehouse)
             .Include(x => x.DestinationWarehouse)
             .Include(x => x.Items)
@@ -133,20 +145,32 @@ public class StockTransferService : IStockTransferService
 
     public async Task<StockTransferResponseDto> GetByIdAsync(
         Guid companyId,
-        Guid transferId)
+        Guid transferId,
+        Guid? warehouseId = null)
     {
-        var transfer = await _context.StockTransfers
+        var query = _context.StockTransfers
             .AsNoTracking()
             .Where(x =>
                 x.CompanyId == companyId &&
-                x.Id == transferId)
+                x.Id == transferId);
+
+        if (warehouseId.HasValue)
+        {
+            var id = warehouseId.Value;
+
+            query = query.Where(x =>
+                x.SourceWarehouseId == id ||
+                x.DestinationWarehouseId == id);
+        }
+
+        var transfer = await query
             .Include(x => x.SourceWarehouse)
             .Include(x => x.DestinationWarehouse)
             .Include(x => x.Items)
                 .ThenInclude(x => x.Product)
             .FirstOrDefaultAsync();
 
-        if (transfer == null)
+        if (transfer is null)
             throw new KeyNotFoundException("Stock transfer not found.");
 
         return MapTransfer(transfer);
@@ -179,8 +203,6 @@ public class StockTransferService : IStockTransferService
                 throw new InvalidOperationException(
                     "Cannot post an empty transfer.");
 
-            // Atomically claim the Draft transfer.
-            // Only one concurrent request can change Draft to Posted.
             var now = DateTime.UtcNow;
 
             var claimed = await _context.StockTransfers
@@ -211,7 +233,7 @@ public class StockTransferService : IStockTransferService
                 .Where(x =>
                     x.CompanyId == companyId &&
                     (x.Id == transfer.SourceWarehouseId ||
-                     x.Id == transfer.DestinationWarehouseId))
+                    x.Id == transfer.DestinationWarehouseId))
                 .AllAsync(x => x.IsActive);
 
             if (!warehousesActive)
@@ -305,8 +327,8 @@ public class StockTransferService : IStockTransferService
         }
         catch (DbUpdateException ex)
             when (ex.InnerException is SqlException sqlException &&
-                  (sqlException.Number == 2601 ||
-                   sqlException.Number == 2627))
+                (sqlException.Number == 2601 ||
+                sqlException.Number == 2627))
         {
             await transaction.RollbackAsync();
 

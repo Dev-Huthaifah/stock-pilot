@@ -1,3 +1,4 @@
+using StockPilot.Api.Data.Seeding;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -85,6 +86,12 @@ public sealed class PlatformCompanyService : IPlatformCompanyService
             _db.CompanyMemberships.Add(membership);
 
             await _db.SaveChangesAsync(cancellationToken);
+
+            await CompanyRolePermissionSeeder.SeedCompanyAsync(
+                _db,
+                company.Id,
+                cancellationToken);
+
             await transaction.CommitAsync(cancellationToken);
 
             return new CreateCompanyResponseDto
@@ -215,6 +222,12 @@ public sealed class PlatformCompanyService : IPlatformCompanyService
             _db.CompanyMemberships.Add(membership);
 
             await _db.SaveChangesAsync(cancellationToken);
+
+            await CompanyRolePermissionSeeder.SeedCompanyAsync(
+                _db,
+                company.Id,
+                cancellationToken);
+
             await transaction.CommitAsync(cancellationToken);
 
             return new CreateCompanyResponseDto
